@@ -20,7 +20,9 @@ BASEDIR = '/home/julien/work/madsdf/gregoire/dev/etude_mouvement/1_RAWDATA/'\
     #lines = f.readlines()
 #with open('out.txt') as f:
     #lines = f.readlines()
-with open('/home/julien/work/madsdf/my/data/movements_02_08_2013/out_calib.txt') as f:
+#with open('/home/julien/work/madsdf/my/data/movements_02_08_2013/out_calib.txt') as f:
+    #lines = f.readlines()
+with open('/home/julien/work/madsdf/my/data/movements_set2_hector_02_11_2013/out.txt') as f:
     lines = f.readlines()
 accel, gyro, labels = utils.load_data(iter(lines))
 

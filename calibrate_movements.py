@@ -7,7 +7,7 @@ import os
 import re
 ##
 #dirname = sys.argv[1]
-dirname = '/home/julien/work/madsdf/my/data/movements_02_08_2013'
+dirname = '/home/julien/work/madsdf/my/data/movements_hector_02_11_2013'
 calib_dirname = '/home/julien/work/madsdf/my/data/calibrations'
 reload(utils); utils.load_calibration_from_properties('/home/julien/work/madsdf/my/data/calibrations/1_5_9EDB.accel.properties')
 ##

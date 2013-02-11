@@ -45,9 +45,9 @@ def plot_cmd(accel, labels, command, rep):
     """Plot a single repetition of a command"""
     pl.title('Command %d' % command)
     data = accel[labels == command][rep, :]
-    pl.plot(np.arange(100), data[0,:], label='x', c='r')
-    pl.plot(np.arange(100), data[1,:], label='y', c='g')
-    pl.plot(np.arange(100), data[2,:], label='z', c='b')
+    pl.plot(np.arange(data.shape[1]), data[0,:], label='x', c='r')
+    pl.plot(np.arange(data.shape[1]), data[1,:], label='y', c='g')
+    pl.plot(np.arange(data.shape[1]), data[2,:], label='z', c='b')
     pl.legend()
 
 def plot_sample(accel, sid):
