@@ -54,8 +54,13 @@ BASEDIR = '/home/julien/work/madsdf/gregoire/dev/etude_mouvement/1_RAWDATA/'\
 
 #with open(os.path.join(BASEDIR, 'droite.txt')) as f:
     #lines = f.readlines()
-with open('out_1-4.txt') as f:
+#with open('out_1-4.txt') as f:
+#    lines = f.readlines()
+#with open('out.txt') as f:
+    #lines = f.readlines()
+with open('/home/julien/work/madsdf/my/data/movements_02_08_2013/out.txt') as f:
     lines = f.readlines()
+
 accel, gyro, labels = load_data(iter(lines))
 
 ##
@@ -63,14 +68,14 @@ def plot_cmd(accel, labels, command, rep):
     """Plot a single repetition of a command"""
     pl.title('Command %d' % command)
     data = accel[labels == command][rep, :]
-    pl.plot(np.arange(100), data[0,:], label='x', c='r')
-    pl.plot(np.arange(100), data[1,:], label='y', c='g')
-    pl.plot(np.arange(100), data[2,:], label='z', c='b')
+    pl.plot(np.arange(data.shape[1]), data[0,:], label='x', c='r')
+    pl.plot(np.arange(data.shape[1]), data[1,:], label='y', c='g')
+    pl.plot(np.arange(data.shape[1]), data[2,:], label='z', c='b')
     pl.legend()
 ## Filtering of accel
 faccel = bn.move_median(accel, 10, axis=-1)
 faccel[np.isnan(faccel)] = accel[np.isnan(faccel)]
-if True:
+if False:
     for cmd, rep in [(1, 0), (2,3), (5, 6), (1, 4)]:
         pl.figure()
         pl.suptitle('cmd %d rep %d' % (cmd, rep))
@@ -137,9 +142,9 @@ def plot_sample(accel, sid):
     """Plot a single repetition of a command"""
     pl.title('Sample %d' % sid)
     data = accel[sid]
-    pl.plot(np.arange(100), data[0,:], label='x', c='r')
-    pl.plot(np.arange(100), data[1,:], label='y', c='g')
-    pl.plot(np.arange(100), data[2,:], label='z', c='b')
+    pl.plot(np.arange(data.shape[1]), data[0,:], label='x', c='r')
+    pl.plot(np.arange(data.shape[1]), data[1,:], label='y', c='g')
+    pl.plot(np.arange(data.shape[1]), data[2,:], label='z', c='b')
     pl.legend()
 ##
 

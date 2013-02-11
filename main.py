@@ -10,53 +10,19 @@ import functools
 import dtw
 import dtw.fast
 import itertools
-##
-def load_data(lineiter):
-    labels = []
-    accel = []
-    gyro = []
-    def parse_sensor(headername):
-        vec = []
-        for i, c in enumerate(['X', 'Y', 'Z']):
-            dataline = next(lineiter)
-            assert dataline.startswith('%s %s' % (headername, c))
-            semicolon_idx = dataline.index(':')
-            vec.append(np.fromstring(dataline[semicolon_idx+1:], sep=';'))
-        return np.array(vec)
 
-    cmd_re = re.compile(r'COMMAND\s+(?P<cmd>\d+)\s+SAMPLE\s+(?P<sample>\d+)')
-    while lineiter:
-        try:
-            line = next(lineiter)
-        except StopIteration:
-            break
-
-        assert line.startswith('COMMAND')
-        m = re.match(cmd_re, line)
-        cmdnum = int(m.groupdict()['cmd'])
-        samplenum = int(m.groupdict()['sample'])
-        labels.append(cmdnum)
-        a = parse_sensor('Accel')
-        g = parse_sensor('Gyro')
-        accel.append(a)
-        gyro.append(g)
-
-        print line, ' => cmdnum : ', cmdnum
-
-    accel = np.array(accel)
-    gyro = np.array(gyro)
-    labels = np.array(labels)
-    return accel, gyro, labels
-
+import utils
 ## Load data
 BASEDIR = '/home/julien/work/madsdf/gregoire/dev/etude_mouvement/1_RAWDATA/'\
         + '2_capteurs/mouvements_plus multi/'
 
 #with open(os.path.join(BASEDIR, 'droite.txt')) as f:
     #lines = f.readlines()
-with open('out.txt') as f:
+#with open('out.txt') as f:
+    #lines = f.readlines()
+with open('/home/julien/work/madsdf/my/data/movements_02_08_2013/out_calib.txt') as f:
     lines = f.readlines()
-accel, gyro, labels = load_data(iter(lines))
+accel, gyro, labels = utils.load_data(iter(lines))
 
 ##
 nlabels = np.unique(labels)
@@ -72,15 +38,6 @@ for axis in [0, 1, 2]:
         pl.plot(accel[idx, axis, :].T)
         #for j in idx:
             #pl.plot(accel[j, axis, :])
-##
-def plot_cmd(accel, labels, command, rep):
-    """Plot a single repetition of a command"""
-    pl.title('Command %d' % command)
-    data = accel[labels == command][rep, :]
-    pl.plot(np.arange(100), data[0,:], label='x', c='r')
-    pl.plot(np.arange(100), data[1,:], label='y', c='g')
-    pl.plot(np.arange(100), data[2,:], label='z', c='b')
-    pl.legend()
 ## Load features
 BASEDIR = '/home/julien/work/madsdf/gregoire/dev/etude_mouvement/2_FEATURES/'\
         + '2_capteurs/mouvements_plus multi/droite'
@@ -162,9 +119,9 @@ for cmd, rep in [(1, 0), (2,3), (5, 6), (1, 4)]:
     pl.figure()
     pl.suptitle('cmd %d rep %d' % (cmd, rep))
     pl.subplot(211)
-    plot_cmd(accel, labels, cmd, rep)
+    utils.plot_cmd(accel, labels, cmd, rep)
     pl.subplot(212)
-    plot_cmd(faccel, labels, cmd, rep)
+    utils.plot_cmd(faccel, labels, cmd, rep)
 ##
 def get_serie(accel, command, rep):
     return accel[labels == command][rep, :]
@@ -220,15 +177,6 @@ pl.yticks(np.arange(len(xticks)), xticks, rotation=90)
 pl.colorbar()
 pl.tight_layout()
 ##
-def plot_sample(accel, sid):
-    """Plot a single repetition of a command"""
-    pl.title('Sample %d' % sid)
-    data = accel[sid]
-    pl.plot(np.arange(100), data[0,:], label='x', c='r')
-    pl.plot(np.arange(100), data[1,:], label='y', c='g')
-    pl.plot(np.arange(100), data[2,:], label='z', c='b')
-    pl.legend()
-##
 
 stranges = [19, 20, 21, 22, 23, 24]
 np.argsort(DM[:,19])
@@ -254,27 +202,8 @@ newlabels = np.array([knn_DM(DM, sampleid) for sampleid in xrange(len(labels))])
 
 modified = np.flatnonzero(newlabels - labels)
 ## Write a new file
-
-def write_data(f, accel, gyro, labels):
-    order = np.argsort(labels)
-    labels = labels[order]
-    accel = accel[order]
-    gyro = gyro[order]
-    for k, g in itertools.groupby(range(len(labels)), key=lambda i: labels[i]):
-        for sampleid, i in enumerate(g):
-            f.write('COMMAND %d SAMPLE %d\n' % (k, sampleid + 1))
-            def _w_axis(data, axname, axnum):
-                f.write('%s : ' % axname)
-                f.write(';'.join(['%.17g'%d for d in data[i, axnum, :]]) + '\n')
-            _w_axis(accel, 'Accel X', 0)
-            _w_axis(accel, 'Accel Y', 1)
-            _w_axis(accel, 'Accel Z', 2)
-            _w_axis(gyro, 'Gyro X', 0)
-            _w_axis(gyro, 'Gyro Y', 1)
-            _w_axis(gyro, 'Gyro Z', 2)
-##
 with open('out.txt', 'w') as f:
-    write_data(f, accel, gyro, labels)
+    utils.write_data(f, accel, gyro, labels)
 
 ##
 sample1 = 18
