@@ -9,7 +9,9 @@ import scipy.spatial.distance as spdist
 import functools
 import dtw
 import dtw.fast
+import scipy.stats as stats
 import itertools
+import matplotlib.colors as mpcolors
 
 import utils
 ## Load data
@@ -19,26 +21,41 @@ BASEDIR = '/home/julien/work/madsdf/gregoire/dev/etude_mouvement/1_RAWDATA/'\
 #with open(os.path.join(BASEDIR, 'droite.txt')) as f:
     #lines = f.readlines()
 #datafilename = '/home/julien/work/madsdf/my/data/merged_calib.txt'
-datafilename = '/home/julien/work/madsdf/my/data/left/movements_90deg/out.txt'
+#datafilename = '/home/julien/work/madsdf/my/data/left/movements_90deg/out.txt'
+#datadir = '/home/julien/Dropbox/madsdf/data/right/repetitive_movements/'
+datadir = '/home/julien/Dropbox/madsdf/data/left/repetitive_movements/'
+datafiles = os.listdir(datadir)
+datafiles = filter(lambda f: f.endswith('.txt') and 'movement' in f, datafiles)
 
-with open(datafilename) as f:
-    lines = f.readlines()
+lines = []
+for fname in datafiles:
+    with open(os.path.join(datadir, fname)) as f:
+        lines += f.readlines()
+origids = np.arange(len(datafiles))
 accel, gyro, labels = utils.load_data(iter(lines))
+assert origids.shape[0] == accel.shape[0]
 
-##
-nlabels = np.unique(labels)
-c = np.ceil(np.sqrt(np.max(nlabels)))
-r = np.floor(np.sqrt(np.max(nlabels)))
-for axis in [0, 1, 2]:
+ulabels = np.unique(labels)
+nlabels = np.max(ulabels)
+if False:
     pl.figure()
-    pl.suptitle('Axis %d' % axis)
-    for i in nlabels:
-        idx = np.flatnonzero(labels == i)
-        pl.subplot(c, r, i)
-        pl.title('Command %d' % i)
-        pl.plot(accel[idx, axis, :].T)
-        #for j in idx:
-            #pl.plot(accel[j, axis, :])
+    pl.title('Template counts per label')
+    counts, bins, patches = pl.hist(labels, bins=nlabels)
+    pl.xticks(bins + 0.5, np.arange(np.min(ulabels), np.max(ulabels)+1))
+##
+if False:
+    c = np.ceil(np.sqrt(np.max(nlabels)))
+    r = np.floor(np.sqrt(np.max(nlabels)))
+    for axis in [0, 1, 2]:
+        pl.figure()
+        pl.suptitle('Axis %d' % axis)
+        for i in nlabels:
+            idx = np.flatnonzero(labels == i)
+            pl.subplot(c, r, i)
+            pl.title('Command %d' % i)
+            pl.plot(accel[idx, axis, :].T)
+            #for j in idx:
+                #pl.plot(accel[j, axis, :])
 ## Filtering of accel
 faccel = bn.move_median(accel, 10, axis=-1)
 faccel[np.isnan(faccel)] = accel[np.isnan(faccel)]
@@ -74,18 +91,29 @@ order = np.argsort(labels)
 labels = labels[order]
 accel = accel[order]
 faccel = faccel[order]
+origids = origids[order]
 ##
 distfn = functools.partial(mlpy.dtw_std, dist_only=True)
 #distfn = dtw.fast.dtw_fast
 #distfn = spdist.euclidean
 DM = np.zeros((accel.shape[0], accel.shape[0]), dtype=float)
 DM[:] = np.nan
-for i in xrange(accel.shape[0]):
-    for j in xrange(i+1, accel.shape[0]):
-        if i != j:
-            DM[i,j] = DM[j,i] = dist_3_axis(accel[i], accel[j], distfn)
-    if i % 50 == 0:
-        print i
+##
+if True:
+    for i in xrange(faccel.shape[0]):
+        for j in xrange(i+1, faccel.shape[0]):
+            if i != j:
+                DM[i,j] = DM[j,i] = dist_3_axis(faccel[i], faccel[j], distfn)
+        if i % 50 == 0:
+            print i
+##
+if False:
+    for i in xrange(accel.shape[0]):
+        for j in xrange(i+1, accel.shape[0]):
+            if i != j:
+                DM[i,j] = DM[j,i] = dist_3_axis(accel[i], accel[j], distfn)
+        if i % 50 == 0:
+            print i
 ##
 if False:
     DM = np.zeros((accel.shape[0], accel.shape[0]), dtype=float)
@@ -97,8 +125,14 @@ if False:
         if i % 50 == 0:
             print i
 ##
-pl.figure()
-pl.imshow(DM, interpolation='none', aspect='auto', origin='lower')
+fig = pl.figure()
+plot = fig.add_subplot(111)
+plot.tick_params(axis='both', which='major', labelsize=8)
+plot.tick_params(axis='both', which='minor', labelsize=8)
+vmax = stats.scoreatpercentile(np.ravel(DM[np.isfinite(DM)]), 95)
+#pl.imshow(DM, interpolation='none', aspect='auto', origin='lower', vmax=vmax)
+pl.imshow(DM, interpolation='none', aspect='auto', origin='lower',
+          norm=mpcolors.LogNorm())
 xticks = ['%d\n(%d)'%(i, labels[i]) for i in xrange(len(labels))]
 pl.xticks(np.arange(len(xticks)), xticks)
 #pl.xticks(np.arange(len(labels)), labels)
