@@ -68,6 +68,18 @@ if False:
         pl.subplot(212)
         utils.plot_cmd(faccel, labels, cmd, rep)
 ##
+if False:
+    right_cmd = [(1, 'GOFORWARD'), (2, 'GORIGHT'), (3, 'GOTOP'),
+                 (4, 'GODOWN'), (5, 'NOTHING'), (8, 'ROTATERIGHT')]
+    left_cmd = [(1, 'GOBACKWARD'), (2, 'GOLEFT'), (3, 'ROTATELEFT'), (4, 'NOTHING')]
+    for cmd, cmdname in left_cmd:
+        pl.figure(figsize=(24, 12.425))
+        utils.plot_cmd(accel, labels, cmd, 1)
+        pl.title('%s (%d)' % (cmdname, cmd))
+        pl.tight_layout()
+        pl.savefig('left_%s.png' % cmdname.lower())
+        pl.close()
+##
 def get_serie(accel, command, rep):
     return accel[labels == command][rep, :]
 
@@ -125,8 +137,35 @@ if False:
         if i % 50 == 0:
             print i
 ##
+def make_ranges(serie):
+    """
+    Group consecutive equal entries into ranges.
+    For example, [0, 2, 2, 2, 3, 3, 1, 1] would return
+    [(0,0,1), # 0 in [0,1[
+     (2,1,4), # 2 in [1,4[
+     (3,4,6), # 3 in [4,6[
+     (1,6,8)] # 1 in [6,8[
+    """
+    ranges = []
+    cur_len = 0
+    for i,e in enumerate(serie):
+        if i > 0 and e != serie[i-1]:
+            # Finish previous range
+            ranges.append((serie[i - 1], i - cur_len, i))
+            cur_len = 1
+        else:
+            cur_len += 1
+
+    if cur_len != 0:
+        ranges.append((serie[-1], len(serie)-cur_len, len(serie)))
+
+    return ranges
+
+labranges = make_ranges(labels)
+
 fig = pl.figure()
 plot = fig.add_subplot(111)
+pl.title('DTW Distance between gesture templates')
 plot.tick_params(axis='both', which='major', labelsize=8)
 plot.tick_params(axis='both', which='minor', labelsize=8)
 vmax = stats.scoreatpercentile(np.ravel(DM[np.isfinite(DM)]), 95)
@@ -134,9 +173,19 @@ vmax = stats.scoreatpercentile(np.ravel(DM[np.isfinite(DM)]), 95)
 pl.imshow(DM, interpolation='none', aspect='auto', origin='lower',
           norm=mpcolors.LogNorm())
 xticks = ['%d\n(%d)'%(i, labels[i]) for i in xrange(len(labels))]
-pl.xticks(np.arange(len(xticks)), xticks)
-#pl.xticks(np.arange(len(labels)), labels)
-pl.yticks(np.arange(len(xticks)), xticks, rotation=90)
+#pl.xticks(np.arange(len(xticks)), xticks)
+#pl.yticks(np.arange(len(xticks)), xticks, rotation=90)
+
+# Show label ranges
+for lr in labranges:
+    pl.axvline(lr[1] - 0.5, lw=2, color='w')
+    pl.axhline(lr[1] - 0.5, lw=2, color='w')
+
+labranges_ticks = ['%d'%lr[0] for lr in labranges]
+labranges_ticks_pos = [(lr[1] + lr[2]) / 2 for lr in labranges]
+pl.xticks(labranges_ticks_pos, labranges_ticks, fontsize=20)
+pl.yticks(labranges_ticks_pos, labranges_ticks, rotation=90, fontsize=20)
+
 pl.colorbar()
 pl.tight_layout()
 ##
@@ -172,7 +221,8 @@ with open('out.txt', 'w') as f:
 sample1 = 18
 sample2 = 151
 
-dist, cost, path = mlpy.dtw_std(accel[sample1,0,:], accel[sample2,0,:], dist_only=False)
+dist, cost, path = mlpy.dtw_std(accel[sample1,0,:], accel[sample2,0,:],
+                                dist_only=False)
 pl.figure()
 pl.suptitle('dist = %f' % dist)
 pl.subplot(211); pl.title('%d'%sample1); pl.plot(accel[sample1,0,:]); pl.ylim(0, 5000); pl.subplot(212); pl.title('%d'%sample2); pl.plot(accel[sample2,0,:]); pl.ylim(0,5000);
